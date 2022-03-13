@@ -14,7 +14,7 @@ print("Finished preprocessing")
 tvec1 = TfidfVectorizer(max_features=500, ngram_range=(1, 3))
 tvec1.fit(x)
 x_tfidf = tvec1.transform(x).toarray()
-x = pd.DataFrame(x_tfidf, columns=tvec1.get_feature_names_out())
+x = pd.DataFrame(x_tfidf, columns=tvec1.get_feature_names())
 print("Finished TFIDF")
 # s_method=False -> with good word attack
 # s_method=True -> with PGD only

@@ -1,8 +1,10 @@
 import pandas as pd
+import numpy as np
 from sklearn import svm
 from sklearn.model_selection import cross_val_score, train_test_split
 from statistics import mean
 from WhiteBox_WAFS import whitebox
+import threading
 
 
 def estimate_s(x, y, vectorizer, text, s_method=False):
@@ -14,6 +16,7 @@ def estimate_s(x, y, vectorizer, text, s_method=False):
     return result
 
 
+
 def wafs(data, target, k, vectorizer, text, s_method, lamda=0.5):
     initial_features = data.columns.tolist()
     best_features = []
@@ -22,18 +25,63 @@ def wafs(data, target, k, vectorizer, text, s_method, lamda=0.5):
         new_g = pd.Series(index=remaining_features, dtype='float64')
         new_s = pd.Series(index=remaining_features, dtype='float64')
         new_gs = pd.Series(index=remaining_features, dtype='float64')
-        for new_column in remaining_features:
-            model = svm.SVC(kernel='linear')
-            # model.fit(data[best_features+[new_column]], target)
-            new_g[new_column] = mean(cross_val_score(model, data[best_features+[new_column]], target, cv=5))
-            # Revise bellow line when security scoring is finished
-            new_s[new_column] = estimate_s(data[best_features+[new_column]], target, vectorizer, text, s_method=s_method)
-            new_gs[new_column] = new_g[new_column] + lamda * new_s[new_column]
+
+        threads = []
+        remaining = np.array_split(remaining_features, 2)
+        thread1 = Thread("Thread-1", data, target, vectorizer, text, s_method, lamda, best_features,
+                         remaining[0], new_g, new_s, new_gs)
+        thread2 = Thread("Thread-2", data, target, vectorizer, text, s_method, lamda, best_features,
+                         remaining[1], new_g, new_s, new_gs)
+
+        threads.append(thread1)
+        threads.append(thread2)
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
         lamda = lamda * (new_s.max() ** -1)
         best_features.append(new_gs.idxmax())
-        print("curent features ", best_features)
-        print("curent len ", len(best_features))
+        print("current lambda ", lamda)
+        print("current features ", best_features)
+        print("current len ", len(best_features))
     return best_features
+
+def best_feat(name, data, target, vectorizer, text, s_method, lamda, best_features, remaining_features, new_g, new_s, new_gs):
+    for new_column in remaining_features:
+        model = svm.SVC(kernel='linear')
+        # model.fit(data[best_features+[new_column]], target)
+        new_g[new_column] = mean(cross_val_score(model, data[best_features + [new_column]], target, cv=5))
+        # Revise bellow line when security scoring is finished
+        new_s[new_column] = estimate_s(data[best_features + [new_column]], target, vectorizer, text, s_method=s_method)
+        new_gs[new_column] = new_g[new_column] + lamda * new_s[new_column]
+    return new_s, new_gs
+
+
+class Thread(threading.Thread):
+    def __init__(self, name, data, target, vectorizer, text, s_method, lamda, best_features, remaining_features, new_g, new_s, new_gs):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.data = data
+        self.target = target
+        self.vectorizer = vectorizer
+        self.text = text
+        self.s_method = s_method
+        self.lamda = lamda
+        self.best_features = best_features
+        self.remaining_features = remaining_features
+        self.new_g = new_g
+        self.new_s = new_s
+        self.new_gs = new_gs
+        self._lock = threading.Lock()
+
+    def run(self):
+        print("Starting " + self.name)
+        best_feat(self.name, self.data, self.target, self.vectorizer, self.text, self.s_method, self.lamda, self.best_features, self.remaining_features, self.new_g, self.new_s, self.new_gs)
+        print("Exiting " + self.name)
+
+
+
 
 
 
