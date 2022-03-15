@@ -20,7 +20,8 @@ print("Finished TFIDF")
 # s_method=True -> with PGD only
 PGD_only = True
 print("PGD only:", PGD_only)
-selected_features = wafs(x, y, 38, tvec1, x_text, PGD_only)
+thread_num = 5
+selected_features = wafs(x, y, 38, tvec1, x_text, PGD_only, thread_num)
 x = x[selected_features]
 print("Finished WAFS")
 clf = svm.SVC(kernel='linear')
