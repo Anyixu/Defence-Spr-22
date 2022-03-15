@@ -6,6 +6,7 @@ from statistics import mean
 from WhiteBox_WAFS import whitebox
 import threading
 from threading import Thread
+from multiprocessing import Process
 import time
 
 
@@ -35,9 +36,8 @@ def wafs(data, target, k, vectorizer, text, s_method, thread_num, lamda=0.5):
         # thread2 = Thread("Thread-2", data, target, vectorizer, text, s_method, lamda, best_features,
         #                  remaining[1], new_g, new_s, new_gs)
         for i in range(thread_num):
-            th = Thread(target=best_feat, args=(i, data, target, vectorizer, text, s_method, lamda, best_features,
-                          remaining[i], new_g, new_s, new_gs))
-            threads.append(th)
+            threads.append(Thread(target=best_feat, args=(i, data, target, vectorizer, text, s_method, lamda, best_features,
+                          remaining[i], new_g, new_s, new_gs)))
 
         for t in threads:
             t.start()
