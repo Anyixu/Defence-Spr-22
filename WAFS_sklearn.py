@@ -15,5 +15,6 @@ x_tfidf = tvec1.transform(x).toarray()
 x = pd.DataFrame(x_tfidf, columns=tvec1.get_feature_names_out())
 clf = svm.SVC(kernel='linear')
 sfs = SequentialFeatureSelector(clf, n_features_to_select=10, scoring="accuracy", cv=5, n_jobs=-1)
+
 sfs.fit(x, y)
 print(sfs.get_feature_names_out())
