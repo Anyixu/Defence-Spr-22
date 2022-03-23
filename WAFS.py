@@ -6,6 +6,7 @@ from statistics import mean
 from WhiteBox_WAFS import whitebox
 import threading
 from threading import Thread
+from multiprocessing import Process
 import time
 
 
@@ -27,6 +28,7 @@ def wafs(data, target, k, vectorizer, text, s_method, thread_num, lamda=0.5):
         new_g = pd.Series(index=remaining_features, dtype='float64')
         new_s = pd.Series(index=remaining_features, dtype='float64')
         new_gs = pd.Series(index=remaining_features, dtype='float64')
+        
         for new_column in remaining_features:
             # print("Thread %i" % name)
             # print(x)
@@ -53,6 +55,7 @@ def wafs(data, target, k, vectorizer, text, s_method, thread_num, lamda=0.5):
         #     t.start()
         # for t in threads:
         #     t.join()
+
 
         lamda = lamda * (new_s.max() ** -1)
         best_features.append(new_gs.idxmax())

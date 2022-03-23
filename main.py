@@ -12,6 +12,7 @@ from sklearn.feature_selection import SelectFromModel, SequentialFeatureSelector
 
 df = pd.read_csv('messages.csv')
 y = df.label
+
 x_text = df.astype({'message':'str'}).message
 print(x_text)
 x, z, y, z2 = train_test_split(x_text, y, train_size=500, random_state=99)

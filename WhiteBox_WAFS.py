@@ -83,6 +83,7 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
         distance=noise_type,
         dmax=dmax,
         lb=lb, ub=None,
+
         solver_params=solver_params,
         y_target=y_target
     )
@@ -95,8 +96,13 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
         # print("Current Number:", i)
         x0 = ori_examples2_x[i]
         y0 = ori_examples2_y[i]
-
-        y_pred_pgd, _, adv_ds_pgd, _ = pgd_attack.run(x0, y0)
+        # print('x', x0)
+        # print('y', y0)
+        try:
+            y_pred_pgd, _, adv_ds_pgd, _ = pgd_attack.run(x0, y0)
+        except:
+            print('x', x0)
+            print(ub)
         # print("Original x0 label: ", y0.item())
         # print("Adversarial example label (PGD): ", y_pred_pgd.item())
         #
@@ -222,6 +228,7 @@ def svm_attack_wothreading(clf_lin, spam_message, words14str, feature_names, vec
 def whitebox(x_train, x_test, x_train_features, x_test_features, y_train, y_test,
              feature_names, vectorizer, nb_attack=100, dmax=5, PGDonly=False):
     print(x_train_features)
+
     tr_set, ts_set, clf_lin = train_test_SVM(x_train_features, x_test_features, y_train, y_test)
     lb = np.ndarray.min(x_train_features.to_numpy())
     ub = np.ndarray.max(x_train_features.to_numpy())
