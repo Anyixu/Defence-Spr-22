@@ -11,7 +11,7 @@ y = df.label
 x_text = df.message
 x, xt = preprocess(x_text, x_text)
 print("Finished preprocessing")
-tvec1 = TfidfVectorizer(max_features=500, ngram_range=(1, 3))
+tvec1 = TfidfVectorizer(max_features=500)
 tvec1.fit(x)
 x_tfidf = tvec1.transform(x).toarray()
 x = pd.DataFrame(x_tfidf, columns=tvec1.get_feature_names())
