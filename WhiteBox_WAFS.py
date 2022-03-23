@@ -11,6 +11,7 @@ import csv
 import threading
 import time
 from scipy.spatial.distance import cityblock
+from sklearn import metrics
 
 
 def single_transform(message, feature_names, vectorizer):
@@ -38,7 +39,9 @@ def train_test_SVM(x_train_features, x_test_features, y_train, y_test):
 
     # Test the Classifier
     ts_set = CDataset(x_test_features, y_test)
-
+    y_pred = clf_lin.predict(ts_set.X)
+    metric = CMetricAccuracy()
+    acc = metric.performance_score(y_true=ts_set.Y, y_pred=y_pred)
     return tr_set, ts_set, clf_lin
 
 
@@ -47,12 +50,13 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
     cnt = 0  # the number of success adversaril examples
     ori_examples2_x = []
     ori_examples2_y = []
-    for i in range(nb_attack):
+    idx_candidates = np.where(y_test == class_to_attack)
+    print('total example: ', len(idx_candidates[0]))
+    for i in idx_candidates[0]:
         # take a point at random being the starting point of the attack
-        idx_candidates = np.where(y_test == class_to_attack)
-        # select nb_init_pts points randomly in candidates and make them move
-        rn = np.random.choice(idx_candidates[0].size, 1)
-        x0, y0 = ts_set[idx_candidates[0][rn[0]], :].X, ts_set[idx_candidates[0][rn[0]], :].Y
+        # # select nb_init_pts points randomly in candidates and make them move
+        # rn = np.random.choice(idx_candidates[0].size, 1)
+        x0, y0 = ts_set[i, :].X, ts_set[i, :].Y
         x0 = x0.astype(float)
         y0 = y0.astype(int)
         x2 = x0.tondarray()[0]
@@ -60,7 +64,6 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
 
         ori_examples2_x.append(x2)
         ori_examples2_y.append(y2)
-
     # Perform adversarial attacks
     noise_type = 'l2'  # Type of perturbation 'l1' or 'l2'
     y_target = 0
@@ -69,7 +72,7 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
     # Bounds of the attack space. Can be set to `None` for unbounded
 
     solver_params = {
-        'eta': 0.01,
+        'eta': 0.3,
         'max_iter': 1000,
         'eps': 1e-4}
 
@@ -79,7 +82,7 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
         double_init_ds=tr_set,
         distance=noise_type,
         dmax=dmax,
-        lb=lb, ub=ub,
+        lb=lb, ub=None,
         solver_params=solver_params,
         y_target=y_target
     )
@@ -108,6 +111,7 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
         ad_examples_y.append(y_pred_pgd.item())
 
         attack_pt = adv_ds_pgd.X.tondarray()[0]
+    print("success:", cnt)
     ori_examples2_x = np.array(ori_examples2_x)
     ori_examples2_y = np.array(ori_examples2_y)
     ad_examples_x = np.array(ad_examples_x)
@@ -153,7 +157,6 @@ def magical_word(x_train, x_test, y_train, y_test, result, cnt):
     df1 = pd.DataFrame(data=d1)
     frames = [df, df1]
     messages = pd.concat(frames)
-    messages.to_csv("messages.csv")
     spam = messages[messages.label == 1]
     ham = messages[messages.label == 0]
 
@@ -217,7 +220,8 @@ def svm_attack_wothreading(clf_lin, spam_message, words14str, feature_names, vec
 
 
 def whitebox(x_train, x_test, x_train_features, x_test_features, y_train, y_test,
-             feature_names, vectorizer, nb_attack=100, dmax=0.6, PGDonly=False):
+             feature_names, vectorizer, nb_attack=100, dmax=5, PGDonly=False):
+    print(x_train_features)
     tr_set, ts_set, clf_lin = train_test_SVM(x_train_features, x_test_features, y_train, y_test)
     lb = np.ndarray.min(x_train_features.to_numpy())
     ub = np.ndarray.max(x_train_features.to_numpy())
