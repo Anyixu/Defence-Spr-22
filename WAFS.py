@@ -6,7 +6,6 @@ from statistics import mean
 from WhiteBox_WAFS import whitebox
 import threading
 from threading import Thread
-from multiprocessing import Process
 import time
 
 
@@ -14,30 +13,38 @@ def estimate_s(x, y, vectorizer, text, s_method=False):
     SEED = 2000
     x_train, x_test, y_train, y_test = train_test_split(text, y, test_size=.2, random_state=SEED)
     x_train_features, x_test_features, y_train, y_test = train_test_split(x, y, test_size=.2, random_state=SEED)
+    # try:
     result = mean(whitebox(x_train, x_test, x_train_features, x_test_features, y_train, y_test, x.columns, vectorizer,
                            PGDonly=s_method))
+    # except:
+    #     try:
+    #         result = mean(
+    #             whitebox(x_train, x_test, x_train_features, x_test_features, y_train, y_test, x.columns, vectorizer,
+    #                      PGDonly=s_method))
+    #     except:
+    #
+    #         result = 0
     print("mean distance: ", result)
     return result
 
 
-def wafs(data, target, k, vectorizer, text, s_method, thread_num, lamda=0.5):
-    initial_features = data.columns.tolist()
+def wafs(x_feature_tr, x_feature_ts, y_tr, y_ts, k, vectorizer, text, s_method, thread_num, lamda=0.5):
+    initial_features = x_feature_tr.columns.tolist()
     best_features = []
     while len(initial_features) > 0 and len(best_features) < k:
         remaining_features = list(set(initial_features)-set(best_features))
         new_g = pd.Series(index=remaining_features, dtype='float64')
         new_s = pd.Series(index=remaining_features, dtype='float64')
         new_gs = pd.Series(index=remaining_features, dtype='float64')
-        
         for new_column in remaining_features:
             # print("Thread %i" % name)
             # print(x)
             model = svm.SVC(kernel='linear')
             # model.fit(data[best_features+[new_column]], target)
             print(best_features + [new_column])
-            new_g[new_column] = mean(cross_val_score(model, data[best_features + [new_column]], target, cv=5))
+            new_g[new_column] = mean(cross_val_score(model, x_feature_tr[best_features + [new_column]], y_tr, cv=5))
             # Revise bellow line when security scoring is finished
-            new_s[new_column] = estimate_s(data[best_features + [new_column]], target, vectorizer, text,
+            new_s[new_column] = estimate_s(x_feature_ts[best_features + [new_column]], y_ts, vectorizer, text,
                                            s_method=s_method)
             new_gs[new_column] = new_g[new_column] + lamda * new_s[new_column]
         # threads = []
@@ -55,7 +62,6 @@ def wafs(data, target, k, vectorizer, text, s_method, thread_num, lamda=0.5):
         #     t.start()
         # for t in threads:
         #     t.join()
-
 
         lamda = lamda * (new_s.max() ** -1)
         best_features.append(new_gs.idxmax())

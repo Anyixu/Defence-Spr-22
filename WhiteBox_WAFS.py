@@ -83,7 +83,6 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
         distance=noise_type,
         dmax=dmax,
         lb=lb, ub=None,
-
         solver_params=solver_params,
         y_target=y_target
     )
@@ -96,13 +95,8 @@ def pdg_attack(clf_lin, tr_set, ts_set, y_test, feature_names, nb_attack, dmax, 
         # print("Current Number:", i)
         x0 = ori_examples2_x[i]
         y0 = ori_examples2_y[i]
-        # print('x', x0)
-        # print('y', y0)
-        try:
-            y_pred_pgd, _, adv_ds_pgd, _ = pgd_attack.run(x0, y0)
-        except:
-            print('x', x0)
-            print(ub)
+
+        y_pred_pgd, _, adv_ds_pgd, _ = pgd_attack.run(x0, y0)
         # print("Original x0 label: ", y0.item())
         # print("Adversarial example label (PGD): ", y_pred_pgd.item())
         #
@@ -168,13 +162,14 @@ def magical_word(x_train, x_test, y_train, y_test, result, cnt):
 
     # Tf-idf for spam datasets
     vect_spam = TfidfVectorizer()
+    print('xxxxxxxxxxxxxxxxxxxxx', spam['message'])
     vect_spam.fit_transform(spam['message'])
-    header_spam = vect_spam.get_feature_names_out()
+    header_spam = vect_spam.get_feature_names()
 
     # Tf-idf for ham datasets
     vect_ham = TfidfVectorizer()
     vect_ham.fit_transform(ham['message'])
-    header_ham = vect_ham.get_feature_names_out()
+    header_ham = vect_ham.get_feature_names()
 
     # find unique ham words
     ham_unique = list(set(header_ham).difference(set(header_spam)))
@@ -227,7 +222,6 @@ def svm_attack_wothreading(clf_lin, spam_message, words14str, feature_names, vec
 
 def whitebox(x_train, x_test, x_train_features, x_test_features, y_train, y_test,
              feature_names, vectorizer, nb_attack=100, dmax=5, PGDonly=False):
-    print(x_train_features)
 
     tr_set, ts_set, clf_lin = train_test_SVM(x_train_features, x_test_features, y_train, y_test)
     lb = np.ndarray.min(x_train_features.to_numpy())
